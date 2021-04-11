@@ -15,6 +15,7 @@ public class Executor {
         ExecutorService executorService = Executors.newFixedThreadPool(1);
 
         //executorService.submit(new PrimaryRocksDB(resultQueue));
+
         executorService.submit(new SecondaryRocksDB(resultQueue));
 
         System.out.printf("Main thread done\n");

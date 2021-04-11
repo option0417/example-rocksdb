@@ -50,17 +50,16 @@ public class SecondaryRocksDB implements Callable<Void> {
 
                         if (value != null) {
                             System.out.printf("\t\tFound value: %s\n", new String(value));
+                            count++;
                         } else {
                             System.out.printf("\t\tNot found with %s\n", putPrefix);
+                            rocksDB.tryCatchUpWithPrimary();
                         }
-
-                        count++;
                     } catch (RocksDBException e) {
                         e.printStackTrace();
                     }
                 //}
 
-                Thread.sleep(500L);
             }
         }
 
