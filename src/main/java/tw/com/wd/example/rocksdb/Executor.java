@@ -12,9 +12,15 @@ public class Executor {
 
         LinkedBlockingQueue<String> resultQueue = new LinkedBlockingQueue<String>();
 
-        ExecutorService executorService = Executors.newFixedThreadPool(1);
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
 
-        //executorService.submit(new PrimaryRocksDB(resultQueue));
+        executorService.submit(new PrimaryRocksDB(resultQueue));
+
+        try {
+            Thread.sleep(1000L);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         executorService.submit(new SecondaryRocksDB(resultQueue));
 

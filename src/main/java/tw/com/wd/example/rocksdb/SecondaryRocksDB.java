@@ -7,6 +7,7 @@ import org.rocksdb.RocksDBException;
 import java.io.File;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 
 public class SecondaryRocksDB implements Callable<Void> {
@@ -39,27 +40,26 @@ public class SecondaryRocksDB implements Callable<Void> {
 
         if (rocksDB != null) {
             while (true) {
-                //String putData = this.resultQueue.poll(500L, TimeUnit.MILLISECONDS);
-                String putPrefix = "Data-" + count;
+                String putData = this.resultQueue.poll(500L, TimeUnit.MILLISECONDS);
 
-                //if (putData != null) {
-                //    System.out.printf("Fetch key: %s", putData);
+                if (putData != null) {
+                    System.out.printf("Fetch key: %s", putData);
 
                     try {
-                        byte[] value = rocksDB.get(putPrefix.getBytes());
+                        byte[] value = rocksDB.get(putData.getBytes());
 
                         if (value != null) {
                             System.out.printf("\t\tFound value: %s\n", new String(value));
                             count++;
                         } else {
-                            System.out.printf("\t\tNot found with %s\n", putPrefix);
+                            System.out.printf("\t\tNot found with %s\n", putData);
                             rocksDB.tryCatchUpWithPrimary();
                         }
                     } catch (RocksDBException e) {
                         e.printStackTrace();
                     }
-                //}
-
+                    Thread.sleep(500L);
+                }
             }
         }
 

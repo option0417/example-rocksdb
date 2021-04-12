@@ -53,6 +53,8 @@ public class PrimaryRocksDB implements Callable<Void> {
                 } catch (RocksDBException e) {
                     e.printStackTrace();
                 }
+
+                Thread.sleep(500L);
             }
         }
 
