@@ -100,14 +100,14 @@ public class DBColumnFamilyTest {
             try {
                 rocksDB.put(cf1Handle, "test".getBytes(), "test".getBytes());
                 rocksDB.destroyColumnFamilyHandle(cf1Handle);
-                // Below put operation may occur fatal error from JNI
+                // Below put operation may occur fatal error from JNI, since ColumnFamilyHandle was destroyed
                 // rocksDB.put(cf1Handle, "test2".getBytes(), "test".getBytes());
             } catch (Exception e) {
                 exception = e;
             }
 
             assertThat(exception, is(nullValue()));
-            // Below get operation may occur fatal error from JNI
+            // Below get operation may occur fatal error from JNI, since ColumnFamilyHandle was destroyed
             // assertThat(rocksDB.get(cf1Handle, "test".getBytes()), is(notNullValue()));
             assertThat(RocksDB.listColumnFamilies(new Options(), dbPath).size(), is(2));
         }
