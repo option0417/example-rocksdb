@@ -9,6 +9,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.assertThat;
+
 
 public class DBGetTest {
     private static final String CF_TEST_1 = "cf_test_1";
@@ -20,6 +23,7 @@ public class DBGetTest {
     private String dbPath;
     private Options options;
     private RocksDB rocksDB;
+    private List<ColumnFamilyHandle> cfHandleList;
 
     @Before
     public void beforeTest() throws RocksDBException {
@@ -42,15 +46,10 @@ public class DBGetTest {
         cfDescriptorList.add(cfDescriptor1);
         cfDescriptorList.add(cfDescriptor2);
 
-        List<ColumnFamilyHandle> cfHandleList = new ArrayList<ColumnFamilyHandle>();
+        cfHandleList = new ArrayList<ColumnFamilyHandle>();
 
 
         rocksDB = RocksDB.open(dbOptions, dbPath, cfDescriptorList, cfHandleList);
-        System.out.printf("Size of ColumnFamily: %d\n", cfHandleList.size());
-
-        for (ColumnFamilyHandle cfHandle : cfHandleList) {
-            System.out.printf("\t#%s\n", new String(cfHandle.getName()));
-        }
 
         rocksDB.put(PUT_DATA_1.getBytes(), PUT_DATA_1.getBytes());
         rocksDB.put(cfHandleList.get(1), PUT_DATA_2.getBytes(), PUT_DATA_2.getBytes());
@@ -62,14 +61,48 @@ public class DBGetTest {
     public void afterTest() {
         if (this.rocksDB != null) {
             this.rocksDB.close();
+
+            for (ColumnFamilyHandle cfHandle : cfHandleList) {
+                cfHandle.close();
+            }
+        }
+
+        try {
+            RocksDB.destroyDB(this.dbPath, this.options);
+        } catch (RocksDBException e) {
+            e.printStackTrace();
         }
     }
 
     @Test
-    public void testCommonGet() throws RocksDBException {
-        try (RocksDB rocksDB = RocksDB.open(dbPath)) {
+    public void testCommonGet() {
+        Exception exception = null;
+        byte[] result1 = null;
+        byte[] result2 = null;
+        byte[] result3 = null;
+        int result4Count = 0;
+        byte[] result4 = new byte[4];
 
+        try {
+            result1 = this.rocksDB.get(PUT_DATA_1.getBytes());
+            result2 = this.rocksDB.get(PUT_DATA_2.getBytes());
 
+            result3 = this.rocksDB.get(PUT_DATA_1.getBytes(), 0, PUT_DATA_1.length());
+            result4Count = this.rocksDB.get(PUT_DATA_1.getBytes(), 0, PUT_DATA_1.length(), result4, 0, 4);
+        } catch (Exception e) {
+            exception = e;
+            e.printStackTrace();
         }
+
+
+        assertThat(exception, is(nullValue()));
+        assertThat(result1, is(notNullValue()));
+        assertThat(result2, is(nullValue()));
+        assertThat(result3, is(notNullValue()));
+        assertThat(result4, is(notNullValue()));
+        assertThat(result4Count, is(10));
+        assertThat(new String(result1), is(PUT_DATA_1));
+        assertThat(new String(result3), is(PUT_DATA_1));
+        assertThat(new String(result4), is(PUT_DATA_1.substring(0, 4)));
     }
 }
