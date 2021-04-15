@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.rocksdb.*;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -75,7 +76,7 @@ public class DBGetTest {
     }
 
     @Test
-    public void testCommonGet() {
+    public void testGetOperation() {
         Exception exception = null;
         byte[] result1 = null;
         byte[] result2 = null;
@@ -104,5 +105,87 @@ public class DBGetTest {
         assertThat(new String(result1), is(PUT_DATA_1));
         assertThat(new String(result3), is(PUT_DATA_1));
         assertThat(new String(result4), is(PUT_DATA_1.substring(0, 4)));
+    }
+
+    @Test
+    public void testGetWithReadOption() {
+        Exception exception = null;
+        byte[] result1 = null;
+        byte[] result2 = null;
+        int result3Count = 0;
+        byte[] result3 = new byte[4];
+        int result4Count = 0;
+        byte[] result4 = new byte[3];
+        int resultByteBufferCount = 0;
+        ByteBuffer resultByteBuffer = ByteBuffer.allocateDirect(5);
+
+        try {
+            ReadOptions readOptions = new ReadOptions();
+
+            result1 = this.rocksDB.get(readOptions, PUT_DATA_1.getBytes());
+            result2 = this.rocksDB.get(readOptions, PUT_DATA_1.getBytes(), 0, PUT_DATA_1.length());
+
+            result3Count = this.rocksDB.get(readOptions, PUT_DATA_1.getBytes(), result3);
+            result4Count = this.rocksDB.get(readOptions, PUT_DATA_1.getBytes(), 0, PUT_DATA_1.length(), result4, 0, 3);
+
+            ByteBuffer keyByteBuffer = ByteBuffer.allocateDirect(PUT_DATA_1.length()).put(PUT_DATA_1.getBytes());
+            keyByteBuffer.flip();
+            resultByteBufferCount = this.rocksDB.get(readOptions, keyByteBuffer, resultByteBuffer);
+        } catch (Exception e) {
+            exception = e;
+            e.printStackTrace();
+        }
+
+        assertThat(exception, is(nullValue()));
+        assertThat(result1, is(notNullValue()));
+        assertThat(result2, is(notNullValue()));
+        assertThat(result3, is(notNullValue()));
+        assertThat(result4, is(notNullValue()));
+        assertThat(result3Count, is(10));
+        assertThat(result4Count, is(10));
+
+        assertThat(new String(result1), is(PUT_DATA_1));
+        assertThat(new String(result2), is(PUT_DATA_1));
+        assertThat(new String(result3), is(PUT_DATA_1.substring(0, 4)));
+        assertThat(new String(result4), is(PUT_DATA_1.substring(0, 3)));
+
+        byte[] tmp = new byte[5];
+        resultByteBuffer.get(tmp);
+        assertThat(resultByteBufferCount, is(10));
+        assertThat(new String(tmp), is(PUT_DATA_1.substring(0, 5)));
+    }
+
+    @Test
+    public void testGetWithColumnFamilyHandle() {
+        Exception exception = null;
+        byte[] result1 = null;
+        byte[] result2 = null;
+        int result3Count = 0;
+        byte[] result3 = new byte[5];
+        byte[] result4 = null;
+
+        try {
+            ReadOptions readOptions = new ReadOptions();
+
+            result1 = this.rocksDB.get(cfHandleList.get(1), PUT_DATA_2.getBytes());
+            result2 = this.rocksDB.get(cfHandleList.get(1), readOptions, PUT_DATA_3.getBytes());
+            result3Count = this.rocksDB.get(cfHandleList.get(2), readOptions, PUT_DATA_4.getBytes(), result3);
+            result4 = this.rocksDB.get(cfHandleList.get(0), PUT_DATA_1.getBytes(), 0, PUT_DATA_1.length());
+        } catch (Exception e) {
+            exception = e;
+            e.printStackTrace();
+        }
+
+
+        assertThat(exception, is(nullValue()));
+        assertThat(result1, is(notNullValue()));
+        assertThat(result2, is(notNullValue()));
+        assertThat(result3, is(notNullValue()));
+        assertThat(result4, is(notNullValue()));
+        assertThat(result3Count, is(10));
+        assertThat(new String(result1), is(PUT_DATA_2));
+        assertThat(new String(result2), is(PUT_DATA_3));
+        assertThat(new String(result3), is(PUT_DATA_4.substring(0, 5)));
+        assertThat(new String(result4), is(PUT_DATA_1));
     }
 }
